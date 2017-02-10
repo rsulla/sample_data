@@ -16,10 +16,17 @@ import org.apache.hadoop.util.ToolRunner;
 import com.relsulla.sample_data.mapreduce.CalcuateMeasureMapper;
 import com.relsulla.sample_data.mapreduce.CalcuateMeasureReducer;
 
+import java.net.URI;
+
 /**
  * Created by Bob on 2/9/2017.
  */
 public class CalcuateMeasure extends Configured implements Tool {
+
+    public static final String DIAGNOSIS_CODES_CACHE     = "CalculateMeasuer.diagnosisCodesTable";
+    public static final String COMORBIDITY_COLUMNS_CACHE = "CalculateMeasuer.comorbidityColumnsTable";
+    public static final String MEASURE_COMORBIDITY_CACHE = "CalculateMeasuer.measureComorbidity";
+
     public static void main(String[] args) throws Exception {
 
         int rc = ToolRunner.run(new CalcuateMeasure(), args);
@@ -40,6 +47,9 @@ public class CalcuateMeasure extends Configured implements Tool {
     private int runJob(Configuration conf
                       ,String measure
                       ,String inputPaths
+                      ,String diagnosisCodesTablePath
+                      ,String comorbidityColumnsTablePath
+                      ,String measureComorbidityPath
                       ,String outPath
                       ,int numReducers) {
 
@@ -47,9 +57,12 @@ public class CalcuateMeasure extends Configured implements Tool {
         Job job;
         Path outputPath;
         FileSystem fs;
+        Path diagnosisCodesTableCache;
+        Path comorbidityColumnsTableCache;
+        Path measureComorbidityCache;
 
         try {
-            job = Job.getInstance(conf, "Sample Data by Measure");
+            job = Job.getInstance(conf, "Sample Data by Measure (" + measure + ")");
 
             job.setJarByClass(getClass());
             job.setMapperClass(CalcuateMeasureMapper.class);
@@ -61,6 +74,18 @@ public class CalcuateMeasure extends Configured implements Tool {
             job.setOutputValueClass(Text.class);
 
             job.setInputFormatClass(TextInputFormat.class);
+
+            diagnosisCodesTableCache = new Path(diagnosisCodesTablePath);
+            conf.set(DIAGNOSIS_CODES_CACHE,diagnosisCodesTableCache.getName());
+            job.addCacheFile(new URI(diagnosisCodesTableCache.toString() + "#" + diagnosisCodesTableCache.getName()));
+
+            comorbidityColumnsTableCache = new Path(comorbidityColumnsTablePath);
+            conf.set(COMORBIDITY_COLUMNS_CACHE,comorbidityColumnsTableCache.getName());
+            job.addCacheFile(new URI(comorbidityColumnsTableCache.toString() + "#" + comorbidityColumnsTableCache.getName()));
+
+            measureComorbidityCache = new Path(measureComorbidityPath);
+            conf.set(MEASURE_COMORBIDITY_CACHE,measureComorbidityCache.getName());
+            job.addCacheFile(new URI(measureComorbidityCache.toString() + "#" + measureComorbidityCache.getName()));
 
             outputPath = new Path(outPath);
 
