@@ -8,6 +8,8 @@ import org.apache.hadoop.fs.Path;
  * Created by Bob on 2/9/2017.
  */
 public class Util {
+    public static final String FIELD_SEPARATOR = "\t";
+
     public static FileSystem getFileSystem(String path
                                           , Configuration conf) throws Exception {
 
