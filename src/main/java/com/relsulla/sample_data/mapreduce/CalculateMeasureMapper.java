@@ -31,6 +31,21 @@ public class CalculateMeasureMapper extends Mapper<LongWritable, Text, Text, Tex
     private static final int COL_DIAGNOSIS_CODE    = 8;
     private static final int COL_FIRST_COMORBIDITY = 9;
 
+    public static final int HIGH_LACE_SCORE_VALUE          = 10;
+
+    public static final int OUT_COL_ENCOUNTER_ID           = 0;
+    public static final int OUT_COL_DIAGNOSIS_CODE         = 1;
+    public static final int OUT_COL_LENGTH_OF_STAY         = 2;
+    public static final int OUT_COL_LENGTH_OF_STAY_SCORE   = 3;
+    public static final int OUT_COL_ACUTE_ADMISSIONS       = 4;
+    public static final int OUT_COL_ACUTE_ADMISSIONS_SCORE = 5;
+    public static final int OUT_COL_COMORBIDITY_SUB_SCORE  = 6;
+    public static final int OUT_COL_COMORBIDITY_SCORE      = 7;
+    public static final int OUT_COL_ED_VISITS              = 8;
+    public static final int OUT_COL_ED_VISITS_SCORE        = 9;
+    public static final int OUT_COL_LACE_SCORE             = 10;
+    public static final int OUT_COL_HIGH_LACE_SCORE        = 11;
+
     private HashMap<String, Integer> comorbidityColumnsMap = new HashMap<String, Integer>();
     private HashMap<String,String> diagnosisCodesMap = new HashMap<String, String>();
     private HashMap<String, HashMap<String,String>> measureComorbidityMap = new HashMap<String, HashMap<String,String>>();
@@ -50,6 +65,9 @@ public class CalculateMeasureMapper extends Mapper<LongWritable, Text, Text, Tex
     private int acuteAdmissionsScore;
     private int comorbidityScore;
     private int edVistsScore;
+    private int laceScore;
+
+    private char laceScoreFl;
 
     private StringBuffer outValueText = new StringBuffer();
     private Text outKey = new Text();
@@ -187,13 +205,13 @@ public class CalculateMeasureMapper extends Mapper<LongWritable, Text, Text, Tex
             if ( diagnosisCodesMap.containsKey(inputValues[COL_DIAGNOSIS_CODE]) ) {
                 measure = diagnosisCodesMap.get(inputValues[COL_DIAGNOSIS_CODE]);
 
-                if ( (measure.equals(selectedMeasure) || selectedMeasure.equals("~")) && measureComorbidityMap.containsKey(measure) ) {
-                    for (Map.Entry<String, String> entry : measureComorbidityMap.get(selectedMeasure).entrySet()) {
+                if ( (measure.equals(selectedMeasure) || selectedMeasure.equals("ALL")) && measureComorbidityMap.containsKey(measure) ) {
+                    for (Map.Entry<String, String> entry : measureComorbidityMap.get(measure).entrySet()) {
                         if (comorbidityColumnsMap.containsKey(entry.getKey())) {
                             col = comorbidityColumnsMap.get(entry.getKey());
 
-                            if (inputValues[col].trim().equalsIgnoreCase("YES")) {
-                                comorbidityScore++;
+                            if (inputValues[COL_FIRST_COMORBIDITY+col].trim().equalsIgnoreCase("YES")) {
+                                comorbiditySubScore++;
                             }
                         }
                     }
@@ -250,6 +268,14 @@ public class CalculateMeasureMapper extends Mapper<LongWritable, Text, Text, Tex
                         edVistsScore = 4;
                     }
 
+                    laceScore = lengthOfStayScore + acuteAdmissionsScore + comorbidityScore + edVistsScore;
+
+                    if ( laceScore >= HIGH_LACE_SCORE_VALUE ) {
+                        laceScoreFl = 'Y';
+                    } else {
+                        laceScoreFl = 'N';
+                    }
+
                     outKey.clear();
                     outKey.set(measure);
 
@@ -258,7 +284,25 @@ public class CalculateMeasureMapper extends Mapper<LongWritable, Text, Text, Tex
                     outValueText.append(Util.FIELD_SEPARATOR);
                     outValueText.append(inputValues[COL_DIAGNOSIS_CODE]);
                     outValueText.append(Util.FIELD_SEPARATOR);
-                    outValueText.append(String.valueOf(lengthOfStayScore + acuteAdmissionsScore + comorbidityScore + edVistsScore));
+                    outValueText.append(String.valueOf(lengthOfStay));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(lengthOfStayScore));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(acuteAdmissions));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(acuteAdmissionsScore));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(comorbiditySubScore));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(comorbidityScore));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(edVists));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(edVistsScore));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(String.valueOf(laceScore));
+                    outValueText.append(Util.FIELD_SEPARATOR);
+                    outValueText.append(laceScoreFl);
 
                     outValue.clear();
                     outValue.set(outValueText.toString());

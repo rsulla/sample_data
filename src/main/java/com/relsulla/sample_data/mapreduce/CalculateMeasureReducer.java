@@ -7,6 +7,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 import java.io.IOException;
 import java.util.Iterator;
 
+import com.relsulla.sample_data.mapreduce.CalculateMeasureMapper;
+
 /**
  * Created by Bob on 2/9/2017.
  */
@@ -18,6 +20,8 @@ public class CalculateMeasureReducer extends Reducer<Text, Text, Text, Text> {
     private double highLaceScorePercent;
     private String[] parts;
     private Iterator<Text> valueIterator;
+
+    private StringBuffer outValueText = new StringBuffer();
 
     private Text outValue = new Text();
 
@@ -33,9 +37,7 @@ public class CalculateMeasureReducer extends Reducer<Text, Text, Text, Text> {
 
             measureCount++;
 
-            laceScore = Integer.parseInt(parts[2]);
-
-            if ( laceScore > 9 ) {
+            if ( parts[CalculateMeasureMapper.OUT_COL_HIGH_LACE_SCORE].equals("Y") ) {
                 highLaceCount++;
             }
         }
@@ -44,7 +46,15 @@ public class CalculateMeasureReducer extends Reducer<Text, Text, Text, Text> {
             highLaceScorePercent = (double) highLaceCount / (double) measureCount;
 
             outValue.clear();
-            outValue.set(String.valueOf(highLaceScorePercent));
+
+            outValueText.setLength(0);
+            outValueText.append(String.valueOf(highLaceCount));
+            outValueText.append(Util.FIELD_SEPARATOR);
+            outValueText.append(String.valueOf(measureCount));
+            outValueText.append(Util.FIELD_SEPARATOR);
+            outValueText.append(String.valueOf(highLaceScorePercent));
+
+            outValue.set(outValueText.toString());
 
             context.write(key,outValue);
         }
